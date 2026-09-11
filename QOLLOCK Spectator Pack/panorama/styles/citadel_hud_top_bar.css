@@ -1,0 +1,3 @@
+/* Layered entry point: current QOL Lock top-bar CSS, then observer-only fixes. */
+@import url("s2r://panorama/styles/qollock/citadel_hud_top_bar.vcss_c");
+@import url("s2r://panorama/styles/observer/citadel_hud_top_bar.vcss_c");

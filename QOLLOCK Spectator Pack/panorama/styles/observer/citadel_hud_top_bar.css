@@ -1,0 +1,50 @@
+/* Observer-only additions kept separate so the QOL Lock layer can be refreshed. */
+CitadelHudTopBar,
+.spec_mode CitadelHudTopBar
+{
+	margin-top: 55px;
+}
+
+/* Remove the wide dark fade behind the player portrait row. */
+#GradientBacker
+{
+	visibility: collapse;
+}
+
+/* Nicknames are always on in the spectator pack and sit clear of the portraits. */
+CitadelHudTopBarPlayer .AlwaysPlayerName
+{
+	ignore-parent-flow: true;
+	horizontal-align: center;
+	vertical-align: top;
+	margin-top: -15px;
+	height: 16px;
+	font-size: 16px;
+	text-overflow: shrink min(11px) ellipsis;
+	z-index: 1200;
+}
+
+/* This must match QOL Lock's runtime selector specificity to override it. */
+CitadelHudTopBarPlayer.qol_nickname_active .QOLNickRuntime
+{
+	margin-top: -15px;
+}
+
+CitadelHudTopBarPlayer.qol_nickname_active .AlwaysPlayerName
+{
+	visibility: visible;
+	opacity: 1;
+}
+
+CitadelHudTopBarPlayer.qol_nickname_active .AlwaysPlayerName.qol-hidden
+{
+	visibility: collapse;
+	opacity: 0;
+}
+
+/* The current QOL Lock snapshot misses a delimiter on this declaration. */
+#RiftTimer
+{
+	background-color: gradient(linear, 0% 0%, 100% 0%, from(#000000FF), color-stop(0.70, #000000FF), color-stop(0.85, #00000008), to(#00000000));
+	wash-color: #FFFFFF;
+}

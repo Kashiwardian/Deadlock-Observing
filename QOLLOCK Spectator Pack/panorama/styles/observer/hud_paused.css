@@ -1,0 +1,5 @@
+/* Match the compact pause indicator to the spectator top bar's 55px offset. */
+.minimal_pause_active CitadelPaused
+{
+	margin-top: 205px;
+}

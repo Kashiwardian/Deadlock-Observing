@@ -1,0 +1,42 @@
+/* Current QOL Lock base HUD with narrowly scoped observer overrides. */
+@import url("s2r://panorama/styles/base/hud.vcss_c");
+
+/* Preserve the current spectator pack's always-available target readout. */
+.spec_mode #spectate_bar,
+.TeamSpectator #spectate_bar,
+.replay_playback #spectate_bar
+{
+	visibility: visible;
+}
+
+/* Keep the objective-health row clear of the observer top bar's 55px offset. */
+#objectives_health_friendly
+{
+	margin-top: 80px !important;
+}
+
+.gamemode_streetbrawl #objectives_health_friendly
+{
+	margin-top: 40px !important;
+}
+
+/* Completely suppress the incoming-damage report opened with the scoreboard. */
+#CitadelHudDamageReport,
+CitadelHudDamageReport#CitadelHudDamageReport
+{
+	visibility: collapse !important;
+	opacity: 0 !important;
+	ui-scale: 0% !important;
+	width: 0px !important;
+	height: 0px !important;
+	transform: translate3d(9999px, 0px, 0px) !important;
+	hittest: false !important;
+	pointer-events: none !important;
+}
+
+#CitadelHudDamageReport *
+{
+	visibility: collapse !important;
+	opacity: 0 !important;
+	ui-scale: 0% !important;
+}
