@@ -30,6 +30,7 @@ The Observer Mod builds on existing functionality from Top Bar Plus while introd
 - **Reworked pause indicator** — Adjusts the game pause indicator to prevent it from overlapping with the scoreboard when shown
 - **Additional scoreboard information** — Provides extra information on the scoreboard to assist the casters and observers deliver the narrative of the game to the audience
 
+![Deadlock Observer Mod Preview](<Mod Preview.png>)
 
 ## Installation
 
