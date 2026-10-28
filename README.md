@@ -57,16 +57,16 @@ The Observer Mod builds on existing functionality from Top Bar Plus while introd
 
 This loads the additional observing keybinds used by the Stream Deck preset (see below).
 
-### 2. Import the Stream Deck page
+### 2. Import the Stream Deck profile
 
 1. Open the **Stream Deck** app
 2. Go to settings and navigate to the **Profiles** tab
-3. Add the provided **Deadlock Observing** page template to your profile
+3. Add the provided **Deadlock Observing** profile template to your profile
 4. (Optional) Use the supplied hero portraits to customise the button icons, matching each portrait to the corresponding hero in-game
 
 ### Recommended workflow for hero portraits
 
-If you use hero portraits for your Stream Deck buttons, I recommend **duplicating the page template before setting the icons** and keeping the original as a blank template. Set the hero portraits on the new page. After the game, you can delete the customised page and reuse the blank template for your next match without manually clearing the icons or overwriting your existing setup. If anything goes wrong, you can always re-import the page from the original file.
+If you use hero portraits for your Stream Deck buttons, I recommend **duplicating the page template before setting the icons** and keeping the original as a blank template. Set the hero portraits on the new page. After the game, you can delete the customised page and reuse the blank template for your next match without manually clearing the icons or overwriting your existing setup. If anything goes wrong, you can always re-import the profile from the original file.
 
 ## Keyboard Shortcuts
 
