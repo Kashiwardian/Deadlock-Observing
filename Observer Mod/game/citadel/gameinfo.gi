@@ -13,13 +13,14 @@
 	}
 	nodegraph 0
 	perfwizard 0
-	tonemapping 0 
+	tonemapping 0
 	GameData	"citadel.fgd"
-	
+
+	PGIVersion "48C04ECAFC6448F8D3F41F0AA3A15D065501751CF45FBE32DF6CB951BC4F7F6E"
+
 	Localize
 	{
 		DuplicateTokensAssert	1
-		DisallowTokenContexts	1
 	}
 
 	SupportedLanguages
@@ -59,13 +60,15 @@
 		// Search paths are relative to the exe directory\..\
 		//
 		SearchPaths
-        {
-            // These are optional language paths. They must be mounted first, which is why there are first in the list.
-            // LANGUAGE will be replaced with the actual language name. If not running a specific language, these paths will not be mounted
-            GameLanguage        citadelLANGUAGE
+		{
+			// These are optional language paths. They must be mounted first, which is why there are first in the list.
+			// *LANGUAGE* will be replaced with the actual language name. If not running a specific language, these paths will not be mounted
+			// These currently hold localized images containing text, so they need to follow the UI language, not the audio language.
+			// When we ship localized VO, it should go in a separate Game_AudioLanguage path (e.g. citadel_vo_*LANGUAGE*)
+			Game_UILanguage		citadel_*LANGUAGE*
 
-            // These are optional low-violence paths. They will only get mounted if you're in a low-violence mode.
-            Game_LowViolence    citadel_lv
+			// These are optional low-violence paths. They will only get mounted if you're in a low-violence mode.
+			Game_LowViolence	citadel_lv
 
             Mod     citadel
             Write   citadel
@@ -73,6 +76,9 @@
             Game    citadel
             Game    core
 		}
+
+		"UserSettingsPathID"		"USRLOCAL"
+		"LegacyUserSettingsPathID"	"MOD"
 	}
 	
 	MaterialSystem2
@@ -85,6 +91,7 @@
 			game Outline
 			game Depth
 			game FrontDepth
+			game ShadowSilhouette
 
 			dev ToolsVis // Visualization modes for all shaders (lighting only, normal maps only, etc.)
 			dev ToolsWireframe // This should use the ToolsVis mode above instead of being its own mode\
@@ -122,18 +129,11 @@
 		UseReverseDepth 1
 		Use32BitDepthBuffer 0
 		Use32BitDepthBufferWithoutStencil 0
-		SwapChainSampleableDepth 1
 		VulkanMutableSwapchain 1
 		"LowLatency"								"1"
-		"VulkanOnly"								"1"	[ $LINUX || $OSX ] // No OpenGL or D3D9/11 fallback on Linux or OSX, only Vulkan is supported.
-		"VulkanRequireSubgroupWaveOpSupport"		"1"	[ !$OSX ]
-		"VulkanRequireDescriptorIndexing"			"1"	[ !$OSX ]
-		"VulkanSteamShaderCache" "1"
-		"VulkanSteamAppShaderCache" "1"
-		"VulkanSteamDownloadedShaderCache" "1"
-		"VulkanAdditionalShaderCache" "vulkan_shader_cache.foz"
+		"VulkanRequireSubgroupWaveOpSupport"		"1"
+		"VulkanRequireDescriptorIndexing"			"1"
 		"VulkanStagingPMBSizeLimitMB" "384"
-		"GraphicsPipelineLibrary"	"1"
 		"VulkanOnlyTestProbability" "0"
 		"VulkanDefrag"				"1"
 		"MinStreamingPoolSizeMB"	"1024"
@@ -157,8 +157,12 @@
 			DistanceField 1
 		}
 		PauseSinglePlayerOnGameOverlay 1
+		PauseOnCtrlConsole 0 // Src2 issues a 'setpause' on holding down CTRL + toggleconsole key, disable this for Deadlock.
 		DefensiveConCommands 1
 		DisableLoadingPlaque 1
+		LocalServerClientAccess 1
+
+		"MapMaxCoord" "32768"
 	}
 
 	ContentBuilder
@@ -241,6 +245,8 @@
 
 	ResourceCompiler
 	{
+		ForceVulkanForMapBuild 1
+			
 		// Overrides of the default builders as specified in code, this controls which map builder steps
 		// will be run when resource compiler is run for a map without specifiying any specific map builder
 		// steps. Additionally this controls which builders are displayed in the hammer build dialog.
@@ -249,6 +255,15 @@
 			"bakedlighting"	"1"	// Enable lightmapping during compile time		
 			"envmap"	"0" // turned off since it currently causes an assert and doesn't work due to some build issue
 			"nav"		"1"	// Generate nav mesh data
+			"sareverb"      "0" // Bake Steam Audio reverb
+			"sapaths"	"0" // Bake Steam Audio pathing
+			"sacustomdata"	"1"	// Bake Steam Audio custom data
+		}
+
+		// Game specific steps run after the map has been built, in the order they are listed here
+		GameSpecificPostMapBuildSteps
+		{
+			"pve_nav_cache"	"1"	// Bake the spots the PVE directors spawn things on
 		}
 
 		MeshCompiler
@@ -274,11 +289,20 @@
 			UseAggregateInstances				"1"
 			AggregateInstancingMeshlets			"1"
 			BakePropsWithExtraVertexStreams		"1"
+			MergeTranslucents					"1"
+
+			// Precomputed static shadowmaps for fog
+			BakePrecomputedShadows				"1"
+			BakePrecomputedShadowsForDirectionalLights "0"
+			BakePrecomputedDepthPyramids		"0"
+			PrecomputedShadowmapAtlas			"1" // so precomputed shadows work without bindless (dx11)
+			PrecomputedShadowmapAtlasBorder		"1"
+			PrecomputedShadowmapResolutionDefault "128" // should match SceneSystem/FogCachedShadowTileSizeTools
 		}
 
 		BakedLighting
 		{
-			Version 4
+			Version 5
 			ImportanceVolumeTransitionRegion 512            // distance we transition from high to low resolution charts 
 			LightmapChannels
 			{
@@ -286,17 +310,7 @@
 				debug_chart_color 1
 				directional_irradiance_sh2_dc 1
 				
-				directional_irradiance_sh2_r
-				{
-					CompressedFormat DXT1
-				}
-				
-				directional_irradiance_sh2_g
-				{
-					CompressedFormat DXT1
-				}
-				
-				directional_irradiance_sh2_b
+				directional_irradiance_sh2_lum
 				{
 					CompressedFormat DXT1
 				}
@@ -304,14 +318,15 @@
 			LightmapGutterSize 2 // For bicubic filtering
 			UseStaticLightProbes 0
 			LPVAtlas 1
-			BC6HHueShiftFixup 0 // Causes more artifacts than it solves atm
-			Repack2 1
 		}
 
 		SteamAudio
 		{
 			ReverbDefaults
 			{
+				GridGenerationType	"0"						// 0: Automatic, Everywhere, 1: Automatic, Use Probe Generation Volume, 2: Manual
+				FilterUsingVolumes	"1"						// Filter Using Probe Exclusion Volumes ( boolean )
+				FilterUsingNavMesh	"0"						// Filter Using NavMesh
 				GridSpacing			"3.0"
 				HeightAboveFloor	"1.5"
 				RebakeOption		"0"						// 0: cleanup, 1: manual, 2: auto
@@ -319,9 +334,15 @@
 				NumBounces			"64"
 				IRDuration			"1.0"
 				AmbisonicsOrder		"1"
+				ClusteringEnabled	"0"
+				ClusteringCubemapResolution	"16.0"
+				ClusteringDepthThreshold	"10.0"
 			}
 			PathingDefaults
 			{
+				GridGenerationType	"0"						// 0: Automatic, Everywhere, 1: Automatic, Use Probe Generation Volume, 2: Manual
+				FilterUsingVolumes	"1"						// Filter Using Probe Exclusion Volumes ( boolean )
+				FilterUsingNavMesh	"0"						// Filter Using NavMesh
 				GridSpacing			"3.0"
 				HeightAboveFloor	"1.5"
 				RebakeOption		"0"						// 0: cleanup, 1: manual, 2: auto
@@ -330,6 +351,39 @@
 				ProbeVisThreshold	"0.1"
 				ProbeVisPathRange	"1000.0"
 			}
+			CustomDataDefaults
+			{
+				GridGenerationType	"0"						// 0: Automatic, Everywhere, 1: Automatic, Use Probe Generation Volume, 2: Manual
+				FilterUsingVolumes	"1"						// Filter Using Probe Exclusion Volumes ( boolean )
+				FilterUsingNavMesh	"1"						// Filter Using NavMesh
+				GridSpacing		"6"
+				HeightAboveFloor	"1.5"
+				RebakeOption		"0"						// 0: cleanup, 1: manual, 2: auto
+				BakeOcclusion		"0"						// 0: Disabled, 1: Enabled
+				BakeDimensions		"1"						// 0: Disabled, 1: Enabled
+				BakeMaterials		"0"						// 0: Disabled, 1: Enabled
+				OcclusionPathing			"1"
+				OcclusionReflection			"0"
+				OcclusionReflectionRays		"16384"
+				OcclusionReflectionBounces	"16"
+				DimensionsOutsideThreshold	"0.02"
+				
+			}
+			ProbeGenerationVolumeDefaults
+			{
+				Spacing			"3.0"
+				Height			"1.5"
+				HeightSpacing		"12"
+				UseForReverb		"0"
+				UseForPathing		"0"
+				UseForCustomData	"1"
+				FilterUsingVolumes	"1"
+				FilterUsingNavMesh	"1"
+			}
+		}
+		SoundEventScripts
+		{
+			OmitMetadataAndLineText "1"
 		}
 		SoundStackScripts
 		{
@@ -363,7 +417,6 @@
 
 	Source1Import
 	{
-		// this is just copied from the left4dead3 gameinfo.gi
 		"forcevtxfileupconvert" 1
 	}
 
@@ -386,9 +439,9 @@
 	SceneSystem
 	{
 		GpuLightBinner 1
-		FogCachedShadowAtlasWidth 2048
-		FogCachedShadowAtlasHeight 2048
-		FogCachedShadowTileSize 128
+		FogCachedShadowAtlasWidthTools 2048
+		FogCachedShadowAtlasHeightTools 2048
+		FogCachedShadowTileSizeTools 128 // should match WorldRendererBuilder/PrecomputedShadowmapResolutionDefault
 		GpuLightBinnerSunLightFastPath 1
 		CSMCascadeResolution 2048
 		SunLightManagerCount 0
@@ -401,11 +454,7 @@
 		TransformTextureRowCountToolsMode 6144
 		SunLightMaxCascadeSize		4
 		SunLightShadowRenderMode	Depth
-		LayerBatchThresholdFullsort 20
 		NonTexturedGradientFog		1
-		// Temp till I can add support in citadel shaders
-		DisableLateAllocatedTransformBuffer 1
-		MinimumLateAllocatedVertexCacheBufferSizeMB 64
 		CubemapFog 1
 		VolumetricFog 1
 		FrameBufferCopyFormat R11G11B10F
@@ -452,7 +501,7 @@
 	ModelDoc
 	{
 		"models_gamedata"			"models_gamedata.fgd"
-		"features"					"animgraph;modelconfig;gamepreview;wireframe_backfaces;distancefield"
+		"features"					"modelconfig;gamepreview;wireframe_backfaces;distancefield"
 	}
 
 	Particles
@@ -460,9 +509,15 @@
 		"EnableParticleShaderFeatureBranching"	"1"
 		"Float16HDRBackBuffer" "1"
 		"PET_SupportFadingOpaqueModels" "1"
+		"BindlessParticleShader" "1"
 		"Features" "non_homogenous_forward_layer_only"
 	}
 
+	Physics
+	{
+		"EnableWorldCompounds"			"1"
+	}
+	
 	ConVars
 	{	 
 		"rate"
@@ -471,10 +526,26 @@
 			"default"	"786432"
 			"max"		"1000000"
 		}
+
+		// Networking - General
 		"sv_minrate"	"98304"
 		"sv_maxunlag"	"0.500"
 		"sv_maxunlag_player" "0.200"
 		"sv_lagcomp_filterbyviewangle" "false"
+		"cl_usesocketsforloopback" "1"
+		"cl_poll_network_early" "0"
+		"cq_buffer_bloat_msecs_max" "120"						// 7.68 ticks @64hz max cq bloat
+
+		// Networking - Induced latency (pred offset)
+		"cl_tickpacket_recvmargin_desired" "5" 					// 5 ms base, min. floor for protecting against thrashing the queue
+		"cl_tickpacket_desired_queuelength" "1"					
+		"cl_async_usercmd_send_disabled_recvmargin_min" "0.5"	// Additional frame since we do not use the async usercmd send (potentially unneccessary)
+		"cl_clock_buffer_ticks"	"1"								// Buffer added to the simulation clock margin ( affects pred offset and cadence of client world ticks )
+		"cl_interp_ratio" "0"
+		"cl_async_usercmd_send" "false"							// We don't support early prediction at the moment, which async send requires
+
+		// Nav gen
+		"nav_gen_connect_dist_a" "2.0"
 
 		// Spew warning when adding/removing classes to/from the top of the hierarchy
 		"panorama_classes_perf_warning_threshold_ms" "0.75"
@@ -487,17 +558,30 @@
 		// Enable the composition layer optimization
 		"panorama_skip_composition_layer_content_paint" "1"
 
-		// too expensive (500MB+) to load this
-		"snd_steamaudio_load_reverb_data" "0"
-		"snd_steamaudio_load_pathing_data" "0"
+		// Steam audio loading data
+		"snd_steamaudio_load_reverb_data"		"0"
+		"snd_steamaudio_load_pathing_data"		"0"
+		"snd_steamaudio_load_occlusion_data"	"0"
+		"snd_steamaudio_load_dimensions_data"	"1"
+		"snd_steamaudio_load_materials_data"	"0"
 
 		// Steam Audio project specific convars
-		"snd_steamaudio_enable_custom_hrtf"		"0"
-		"snd_steamaudio_active_hrtf"			"0"
-		"snd_steamaudio_reverb_update_rate"		"10.0"
-		"snd_steamaudio_ir_duration"			"1.0"
-		"snd_steamaudio_enable_pathing"			"0"
-		"snd_steamaudio_invalid_path_length"	"0.0"
+		"snd_steamaudio_enable_custom_hrtf"			"0"
+		"snd_steamaudio_active_hrtf"				"0"
+		"snd_steamaudio_pathing_order"				"3"
+		"snd_steamaudio_pathing_order_rendering"	"3"
+		"snd_steamaudio_enable_pathing"				"0"
+		"snd_steamaudio_enable_reverb"				"0"
+		"snd_steamaudio_reverb_level_db"			"-6"
+		"snd_steamaudio_enable_pathing"				"0"
+		"snd_steamaudio_invalid_path_length"		"0.0"
+		"snd_steamaudio_max_probes_customdata_dimensions"	"100000"
+		"snd_steamaudio_dimensions_grid_height_max"			"100"
+		"snd_steamaudio_baked_dimensions_probelookup_usealternate"	"1"
+		"snd_steamaudio_custombake_dimensions_size_and_inout_bake_enabled" "1"
+		"snd_steamaudio_custombake_dimensions_outsidefield_bake_enabled" "0"
+		"snd_steamaudio_custombake_dimensions_smallsizefield_bake_enabled" "0"
+		"snd_steamaudio_dimensions_max_ray_length"			"2500"
 		"cl_disconnect_soundevent"				"citadel.convar.stop_all_game_layer_soundevents"
 		"snd_event_browser_default_stack"		"citadel_default_3d"
 		
@@ -519,22 +603,17 @@
 
 		"reset_voice_on_input_stallout"         "0"
 		"voice_input_stallout"                  "0.5"
-		"cl_usesocketsforloopback" "1"
-		"cl_poll_network_early" "0"
+		
+		"audio_enclosure_calc_enabled"		"0"
+
+		"sc_layer_batch_threshold_fullsort" "20"
 
 		// Perf/Parallelism
 		"iv_parallel_restore" "1"
 
 		// For perf reasons, since we don't use source-based DSP:
 		"disable_source_soundscape_trace"       "1"
-		
-		// Networking - Induced latency (pred offset)
-		"cl_tickpacket_recvmargin_desired" "5" 					// 5 ms base, min. floor for protecting against thrashing the queue
-		"cl_tickpacket_desired_queuelength" "0"					// 0 = attempt to always reach the queue's min floor
-		"cl_async_usercmd_send_disabled_recvmargin_min" "0.5"	// Additional frame since we do not use the async usercmd send (potentially unneccessary)
-		"cl_clock_buffer_ticks"	"1"
-		"cl_interp_ratio" "0"
-		"cl_async_usercmd_send" "false"
+	
 
 		"fps_max"		"400"
 		"fps_max_ui"	"120"
@@ -557,7 +636,6 @@
 			"max"		"2"
 		}
 
-		"cq_buffer_bloat_msecs_max" "120"
 
 		"snd_soundmixer"						"Default_Mix"
 		"cloth_filter_transform_stateless" "0"
@@ -569,10 +647,27 @@
 
 		"cl_max_particle_pvs_aabb_edge_length" "100"
 		
-		// Allow aggregation of particles (for perf)
+		// Particles
 		"cl_aggregate_particles" "true"
+		"r_particle_batch_collections" "1"
 		
 		"citadel_enable_vdata_sound_preload" "true"
+
+		"r_add_views_in_pre_output"		"1"
+
+		// Disable Cubemap Brightening
+		"lb_cubemap_normalization_max" 		"1"
+
+		"update_all_keyframed_in_spatial_partition_update"	"0"
+		"parallel_update_surrounding_bounds_in_spatial_partition_update"	"1"
+		"always_perform_full_spatial_partition_update" "1"
+		"cl_interp_parallel" "1"
+		"parallel_perform_invalidate_physics" "1"
+		"phys_agg_world_compounds" "0"
+
+		"cl_updaterate" "128"
+		"sv_parallel_checktransmit" "2"
+		"net_gather_child_fields_only" "1"
 	}
 
 	Memory
