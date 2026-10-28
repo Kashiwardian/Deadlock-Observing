@@ -6,6 +6,7 @@ This repository includes the Observer Mod, a Stream Deck preset, and supporting 
 
 ## Table of Contents
 
+- [Features](#features)
 - [Installation](#installation)
 - [Setting Up the Stream Deck Preset](#setting-up-the-stream-deck-preset)
 - [Keyboard Shortcuts](#keyboard-shortcuts)
@@ -14,6 +15,21 @@ This repository includes the Observer Mod, a Stream Deck preset, and supporting 
 - [Credits](#credits)
 
 ---
+## Features
+
+The Observer Mod builds on existing functionality from Top Bar Plus while introducing additional UI improvements and broadcast information:
+
+- **Existing Top Bar Plus features** — Includes Mid Boss, Bridge Buff, and Rift timers, along with Rejuvenator buff duration
+- **Objective map** — Displays objective indicators on the top bar, making it easier to identify which objectives are still active and which have been taken down
+- **Currently spectated player** — Displays the name of the player currently being followed
+- **Top bar offset for broadcast overlays** — Adds a 55px offset to the top bar to accommodate broadcast overlays
+  - If you need a different offset, refer to the *Offsetting the In-Game UI* section of the [observing guide](https://forums.playdeadlock.com/resources/guide-to-deadlock-esports-and-content-creation-observing-and-camera-controls.28/).
+- **Player names above heroes** — Shows player names above their respective heroes to make identification easier during gameplay
+  -**Note:** Long player names may not display correctly. For broadcast production, using a solid overlay and manually adding player names is recommended. A transparent section can be used for overlay to durectly show the names fromt he game, but be prepared for some of them to not show properly
+- **Removed tooltips** — Removes keybind tooltips for a cleaner gameplay view
+- **Reworked pause indicator** — Adjusts the game pause indicator to prevent it from overlapping with the scoreboard when shown
+- **Additional scoreboard information** — Provides extra information on the scoreboard to assist the casters and observers deliver the narrative of the game to the audience
+
 
 ## Installation
 
